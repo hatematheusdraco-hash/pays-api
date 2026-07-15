@@ -10,7 +10,7 @@ import { closePool, pool } from '../src/db.js';
  */
 const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations');
 
-async function run() {
+export async function runMigrations() {
   await pool.query(
     `create table if not exists _migrations (
        name text primary key,
@@ -43,11 +43,14 @@ async function run() {
   }
 }
 
-run()
-  .then(() => closePool())
-  .then(() => console.log('migrations complete'))
-  .catch(async (err) => {
-    console.error(err);
-    await closePool();
-    process.exit(1);
-  });
+// Run directly (npm run migrate) — but importable as runMigrations() too.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runMigrations()
+    .then(() => closePool())
+    .then(() => console.log('migrations complete'))
+    .catch(async (err) => {
+      console.error(err);
+      await closePool();
+      process.exit(1);
+    });
+}

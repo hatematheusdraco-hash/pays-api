@@ -19,7 +19,7 @@ import { closePool } from '../src/db.js';
 const received: string[] = [];
 let webhookSecret = '';
 
-async function main() {
+export async function runDemo(): Promise<boolean> {
   // 1. Local webhook receiver ------------------------------------------------
   const receiver = createServer((req, res) => {
     let body = '';
@@ -139,17 +139,24 @@ async function main() {
   console.log(`Webhooks received (${received.length}): ${received.join(' → ')}`);
   hr();
 
-  // Cleanup
+  // Cleanup (pool is left open for the caller to close)
   stopProcessor();
   stopDispatcher();
   await app.close();
   await new Promise<void>((r) => receiver.close(() => r()));
-  await closePool();
-  process.exit(final.status === 'COMPLETED' ? 0 : 1);
+  return final.status === 'COMPLETED';
 }
 
-main().catch(async (err) => {
-  console.error(err);
-  await closePool().catch(() => {});
-  process.exit(1);
-});
+// Run directly (npm run demo) against DATABASE_URL — importable as runDemo() too.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runDemo()
+    .then(async (ok) => {
+      await closePool();
+      process.exit(ok ? 0 : 1);
+    })
+    .catch(async (err) => {
+      console.error(err);
+      await closePool().catch(() => {});
+      process.exit(1);
+    });
+}

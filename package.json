@@ -12,7 +12,8 @@
     "migrate": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts",
     "demo": "tsx scripts/demo.ts",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "demo:local": "tsx scripts/demo-local.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^10.1.1",
@@ -25,10 +26,13 @@
   "devDependencies": {
     "@types/node": "^22.9.0",
     "@types/pg": "^8.11.10",
+    "embedded-postgres": "^18.4.0-beta.17",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3"
   },
   "allowScripts": {
-    "esbuild@0.28.1": true
+    "esbuild@0.28.1": true,
+    "@embedded-postgres/darwin-arm64@18.4.0-beta.17": true,
+    "fsevents@2.3.3": true
   }
 }
