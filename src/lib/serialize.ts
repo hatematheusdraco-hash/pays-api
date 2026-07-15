@@ -1,4 +1,20 @@
-import type { Payment } from '../types.js';
+import type { Payment, Refund } from '../types.js';
+
+/** Public (API-facing) representation of a refund. */
+export function serializeRefund(r: Refund) {
+  return {
+    id: r.id,
+    object: 'refund',
+    payment_id: r.payment_id,
+    amount: Number(r.amount),
+    currency: r.currency,
+    status: r.status,
+    reason: r.reason,
+    provider_reference: r.provider_reference,
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
+}
 
 /** Public (API-facing) representation of a payment. */
 export function serializePayment(p: Payment) {
@@ -29,6 +45,7 @@ export function serializePayment(p: Payment) {
     fees: {
       pays_fee: p.pays_fee == null ? null : Number(p.pays_fee),
     },
+    amount_refunded: Number(p.amount_refunded ?? 0),
     description: p.description,
     metadata: p.metadata,
     failure_reason: p.failure_reason,

@@ -9,14 +9,20 @@ import { buildEvent, enqueueDeliveries } from '../webhooks/events.js';
  * can never skip or reverse a step.
  */
 const TRANSITIONS: Record<PaymentStatus, PaymentStatus[]> = {
-  CREATED: [PaymentStatus.QUOTE_LOCKED, PaymentStatus.FAILED],
-  QUOTE_LOCKED: [PaymentStatus.PAYMENT_DETECTED, PaymentStatus.FAILED],
+  // A payment can be canceled by the merchant only before funds are on-chain.
+  CREATED: [PaymentStatus.QUOTE_LOCKED, PaymentStatus.CANCELED, PaymentStatus.FAILED],
+  QUOTE_LOCKED: [
+    PaymentStatus.PAYMENT_DETECTED,
+    PaymentStatus.CANCELED,
+    PaymentStatus.FAILED,
+  ],
   PAYMENT_DETECTED: [PaymentStatus.CONFIRMING, PaymentStatus.FAILED],
   CONFIRMING: [PaymentStatus.CONVERTING, PaymentStatus.FAILED],
   CONVERTING: [PaymentStatus.SETTLING, PaymentStatus.FAILED],
   SETTLING: [PaymentStatus.COMPLETED, PaymentStatus.FAILED],
   COMPLETED: [],
   FAILED: [],
+  CANCELED: [],
 };
 
 export function canTransition(from: PaymentStatus, to: PaymentStatus): boolean {
@@ -33,6 +39,7 @@ const EVENT_TYPE: Record<PaymentStatus, string> = {
   SETTLING: 'payment.settling',
   COMPLETED: 'payment.completed',
   FAILED: 'payment.failed',
+  CANCELED: 'payment.canceled',
 };
 
 // Columns the engine is allowed to patch during a transition.

@@ -41,3 +41,13 @@ export const createWebhookSchema = z.object({
 export const simulatePaymentSchema = z.object({
   tx_hash: z.string().optional(),
 });
+
+export const createRefundSchema = z.object({
+  // Omit `amount` for a full refund of the remaining balance.
+  amount: z.number().positive().max(1_000_000).optional(),
+  reason: z.string().max(500).optional(),
+});
+
+export const cancelPaymentSchema = z.object({
+  reason: z.string().max(500).optional(),
+});

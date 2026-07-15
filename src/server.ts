@@ -1,6 +1,9 @@
 import Fastify from 'fastify';
 import rateLimit from '@fastify/rate-limit';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import { config, isProd } from './config.js';
+import { openapiDocument } from './openapi.js';
 import { closePool, ping } from './db.js';
 import { ApiError } from './lib/errors.js';
 import { startProcessor } from './engine/processor.js';
@@ -55,6 +58,15 @@ export async function buildServer() {
       },
     });
   });
+
+  // Interactive API docs at /docs (raw spec at /docs/json).
+  await app.register(swagger, {
+    mode: 'static',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    specification: { document: openapiDocument as any },
+  });
+  await app.register(swaggerUi, { routePrefix: '/docs' });
+  app.get('/openapi.json', { schema: { hide: true } }, () => openapiDocument);
 
   await app.register(healthRoutes);
   await app.register(merchantRoutes);

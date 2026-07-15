@@ -2,29 +2,38 @@ import type { FastifyInstance } from 'fastify';
 import { authenticate } from '../auth/apiKey.js';
 import { tx } from '../db.js';
 import { badRequest, conflict, notFound } from '../lib/errors.js';
-import { serializePayment } from '../lib/serialize.js';
+import { serializePayment, serializeRefund } from '../lib/serialize.js';
 import { prefixedId } from '../lib/id.js';
+import { idempotencyOnSend, idempotencyPreHandler } from '../lib/idempotency.js';
 import {
   createPayment,
   getMerchant,
   getPayment,
   getQuote,
+  getRefund,
   insertQuote,
+  insertRefund,
   listPayments,
+  listRefundsForPayment,
   lockPayment,
 } from '../repo.js';
 import { buildQuote, isQuoteExpired } from '../engine/quoteEngine.js';
+import { emitRefundEvent } from '../engine/refunds.js';
 import { applyTransition } from '../engine/stateMachine.js';
 import { PaymentStatus } from '../types.js';
 import {
+  cancelPaymentSchema,
   createPaymentSchema,
   createQuoteSchema,
+  createRefundSchema,
   simulatePaymentSchema,
 } from './schemas.js';
 import { merchantId, parseBody } from './util.js';
 
 export async function paymentRoutes(app: FastifyInstance): Promise<void> {
   app.addHook('preHandler', authenticate);
+  app.addHook('preHandler', idempotencyPreHandler);
+  app.addHook('onSend', idempotencyOnSend);
 
   // --- Create a payment (Payment Intent) ----------------------------------
   app.post('/v1/payments', async (req, reply) => {
@@ -156,4 +165,97 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
       });
     },
   );
+
+  // --- Cancel a payment (before funds land: CREATED / QUOTE_LOCKED) --------
+  app.post<{ Params: { id: string } }>('/v1/payments/:id/cancel', async (req, reply) => {
+    const body = parseBody(cancelPaymentSchema, req);
+    const mId = merchantId(req);
+
+    const result = await tx(async (client) => {
+      const payment = await lockPayment(req.params.id, client);
+      if (!payment || payment.merchant_id !== mId) {
+        throw notFound(`No such payment: ${req.params.id}`);
+      }
+      if (
+        payment.status !== PaymentStatus.CREATED &&
+        payment.status !== PaymentStatus.QUOTE_LOCKED
+      ) {
+        throw conflict(
+          `Payment is ${payment.status} and can no longer be canceled.`,
+          'payment_not_cancelable',
+        );
+      }
+      const updated = await applyTransition(
+        client,
+        payment,
+        PaymentStatus.CANCELED,
+        { failure_reason: body.reason ?? 'canceled_by_merchant' },
+        { reason: body.reason ?? 'canceled_by_merchant' },
+      );
+      return serializePayment(updated);
+    });
+    return reply.code(200).send(result);
+  });
+
+  // --- Refund a completed payment (full or partial) -----------------------
+  app.post<{ Params: { id: string } }>('/v1/payments/:id/refund', async (req, reply) => {
+    const body = parseBody(createRefundSchema, req);
+    const mId = merchantId(req);
+
+    const result = await tx(async (client) => {
+      const payment = await lockPayment(req.params.id, client);
+      if (!payment || payment.merchant_id !== mId) {
+        throw notFound(`No such payment: ${req.params.id}`);
+      }
+      if (payment.status !== PaymentStatus.COMPLETED) {
+        throw conflict(
+          `Only COMPLETED payments can be refunded (payment is ${payment.status}).`,
+          'payment_not_refundable',
+        );
+      }
+
+      const total = Number(payment.amount_fiat);
+      const alreadyRefunded = Number(payment.amount_refunded);
+      const remaining = +(total - alreadyRefunded).toFixed(2);
+      const amount = body.amount ?? remaining;
+      if (amount > remaining + 1e-9) {
+        throw badRequest(
+          `Refund amount ${amount} exceeds refundable balance ${remaining}.`,
+          { code: 'amount_too_large', param: 'amount' },
+        );
+      }
+
+      const refund = await insertRefund(
+        {
+          payment_id: payment.id,
+          merchant_id: mId,
+          amount: amount.toFixed(2),
+          currency: payment.settlement_currency,
+          reason: body.reason ?? null,
+        },
+        client,
+      );
+      await client.query(
+        `update payments set amount_refunded = amount_refunded + $2, updated_at = now()
+          where id = $1`,
+        [payment.id, amount.toFixed(2)],
+      );
+      await emitRefundEvent(client, refund);
+      return serializeRefund(refund);
+    });
+    return reply.code(201).send(result);
+  });
+
+  app.get<{ Params: { id: string } }>('/v1/payments/:id/refunds', async (req) => {
+    const payment = await getPayment(req.params.id, merchantId(req));
+    if (!payment) throw notFound(`No such payment: ${req.params.id}`);
+    const refunds = await listRefundsForPayment(payment.id);
+    return { object: 'list', data: refunds.map(serializeRefund) };
+  });
+
+  app.get<{ Params: { id: string } }>('/v1/refunds/:id', async (req) => {
+    const refund = await getRefund(req.params.id, merchantId(req));
+    if (!refund) throw notFound(`No such refund: ${req.params.id}`);
+    return serializeRefund(refund);
+  });
 }

@@ -8,6 +8,7 @@ export const PaymentStatus = {
   SETTLING: 'SETTLING',
   COMPLETED: 'COMPLETED',
   FAILED: 'FAILED',
+  CANCELED: 'CANCELED',
 } as const;
 
 export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
@@ -67,9 +68,25 @@ export interface Payment {
   required_confirmations: number | null;
   failure_reason: string | null;
   quote_id: string | null;
+  amount_refunded: string;
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+}
+
+export type RefundStatus = 'pending' | 'processing' | 'succeeded' | 'failed';
+
+export interface Refund {
+  id: string;
+  payment_id: string;
+  merchant_id: string;
+  amount: string;
+  currency: string;
+  reason: string | null;
+  status: RefundStatus;
+  provider_reference: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Quote {

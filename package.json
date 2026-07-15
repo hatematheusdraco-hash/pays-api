@@ -6,17 +6,20 @@
   "description": "PayS — Any-to-Any Payment API (MVP)",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "start": "node dist/server.js",
+    "start": "node dist/src/server.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "migrate": "tsx scripts/migrate.ts",
     "seed": "tsx scripts/seed.ts",
     "demo": "tsx scripts/demo.ts",
     "smoke": "tsx scripts/smoke.ts",
-    "demo:local": "tsx scripts/demo-local.ts"
+    "demo:local": "tsx scripts/demo-local.ts",
+    "test": "node --import tsx --test test/e2e.test.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^10.1.1",
+    "@fastify/swagger": "^9.8.1",
+    "@fastify/swagger-ui": "^6.1.0",
     "dotenv": "^16.4.5",
     "fastify": "^5.1.0",
     "pg": "^8.13.1",

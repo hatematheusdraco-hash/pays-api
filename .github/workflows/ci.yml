@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Engine smoke test (no DB)
+        run: npm run smoke
+        env:
+          DATABASE_URL: postgresql://smoke:smoke@localhost:5432/smoke
+      - name: End-to-end tests (embedded Postgres)
+        run: npm test

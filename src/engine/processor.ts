@@ -2,7 +2,8 @@ import type { FastifyBaseLogger } from 'fastify';
 import type pg from 'pg';
 import { config } from '../config.js';
 import { pool, tx } from '../db.js';
-import { getQuote, lockPayment } from '../repo.js';
+import { getQuote, lockPayment, lockRefund } from '../repo.js';
+import { advanceRefund } from './refunds.js';
 import { blockchainMonitor } from '../providers/blockchain.js';
 import { screenTransaction } from '../providers/compliance.js';
 import { settlementProviderFor } from '../providers/settlement.js';
@@ -153,6 +154,14 @@ async function handleSettling(client: pg.PoolClient, p: Payment): Promise<void> 
   );
 }
 
+async function refundStep(refundId: string, log: FastifyBaseLogger): Promise<void> {
+  await tx(async (client) => {
+    const refund = await lockRefund(refundId, client);
+    if (!refund) return;
+    await advanceRefund(client, refund);
+  }).catch((err) => log.error({ err, refundId }, 'refund step failed'));
+}
+
 export function startProcessor(log: FastifyBaseLogger): () => void {
   let running = false;
   const timer = setInterval(async () => {
@@ -164,6 +173,13 @@ export function startProcessor(log: FastifyBaseLogger): () => void {
         [ACTIVE_STATES],
       );
       for (const row of rows) await step(row.id, log);
+
+      // Advance in-flight refunds too.
+      const { rows: refundRows } = await pool.query<{ id: string }>(
+        `select id from refunds where status in ('pending','processing')
+          order by updated_at asc limit 50`,
+      );
+      for (const r of refundRows) await refundStep(r.id, log);
     } catch (err) {
       log.error({ err }, 'processor tick failed');
     } finally {

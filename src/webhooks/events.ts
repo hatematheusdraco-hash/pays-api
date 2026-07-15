@@ -12,11 +12,20 @@ export interface PaysEvent {
 
 /** Build the event envelope delivered to merchants. */
 export function buildEvent(eventId: string, type: string, payment: Payment): PaysEvent {
+  return buildObjectEvent(eventId, type, serializePayment(payment));
+}
+
+/** Build an event envelope around an already-serialized object (e.g. a refund). */
+export function buildObjectEvent(
+  eventId: string,
+  type: string,
+  object: unknown,
+): PaysEvent {
   return {
     id: eventId,
     type,
     created: Math.floor(Date.now() / 1000),
-    data: { object: serializePayment(payment) },
+    data: { object },
   };
 }
 

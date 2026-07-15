@@ -1,11 +1,12 @@
 import { createHash } from 'node:crypto';
 import { one, query, type Sql } from './db.js';
-import type { Merchant, Payment, Quote, WebhookEndpoint } from './types.js';
+import type { Merchant, Payment, Quote, Refund, WebhookEndpoint } from './types.js';
 import {
   newApiKeyId,
   newApiSecret,
   newMerchantId,
   newPaymentId,
+  newRefundId,
   newWebhookEndpointId,
   newWebhookSecret,
 } from './lib/id.js';
@@ -161,6 +162,61 @@ export async function insertQuote(q: Quote, client?: Sql): Promise<Quote> {
 
 export async function getQuote(id: string, client?: Sql): Promise<Quote | null> {
   return one<Quote>(`select * from quotes where id = $1`, [id], client);
+}
+
+// --- Refunds --------------------------------------------------------------
+
+export async function insertRefund(
+  input: {
+    payment_id: string;
+    merchant_id: string;
+    amount: string;
+    currency: string;
+    reason: string | null;
+  },
+  client?: Sql,
+): Promise<Refund> {
+  const row = await one<Refund>(
+    `insert into refunds (id, payment_id, merchant_id, amount, currency, reason)
+     values ($1, $2, $3, $4, $5, $6)
+     returning *`,
+    [
+      newRefundId(),
+      input.payment_id,
+      input.merchant_id,
+      input.amount,
+      input.currency,
+      input.reason,
+    ],
+    client,
+  );
+  return row!;
+}
+
+export async function getRefund(
+  id: string,
+  merchantId?: string,
+  client?: Sql,
+): Promise<Refund | null> {
+  if (merchantId) {
+    return one<Refund>(
+      `select * from refunds where id = $1 and merchant_id = $2`,
+      [id, merchantId],
+      client,
+    );
+  }
+  return one<Refund>(`select * from refunds where id = $1`, [id], client);
+}
+
+export async function listRefundsForPayment(paymentId: string): Promise<Refund[]> {
+  return query<Refund>(
+    `select * from refunds where payment_id = $1 order by created_at desc`,
+    [paymentId],
+  );
+}
+
+export async function lockRefund(id: string, client: Sql): Promise<Refund | null> {
+  return one<Refund>(`select * from refunds where id = $1 for update`, [id], client);
 }
 
 // --- Webhook endpoints ----------------------------------------------------

@@ -24,6 +24,7 @@ export const newMerchantId = () => prefixedId('mch');
 export const newApiKeyId = () => prefixedId('ak');
 export const newPaymentId = () => prefixedId('pay');
 export const newQuoteId = () => prefixedId('quote');
+export const newRefundId = () => prefixedId('rfnd');
 export const newWebhookEndpointId = () => prefixedId('whe');
 export const newWebhookDeliveryId = () => prefixedId('whd');
 export const newEventId = () => prefixedId('evt');
