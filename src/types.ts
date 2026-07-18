@@ -69,6 +69,8 @@ export interface Payment {
   failure_reason: string | null;
   quote_id: string | null;
   amount_refunded: string;
+  client_secret: string | null;
+  livemode: boolean;
   created_at: string;
   updated_at: string;
   completed_at: string | null;

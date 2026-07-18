@@ -50,6 +50,8 @@ export function serializePayment(p: Payment) {
     metadata: p.metadata,
     failure_reason: p.failure_reason,
     quote_id: p.quote_id,
+    client_secret: p.client_secret,
+    livemode: p.livemode,
     created_at: p.created_at,
     updated_at: p.updated_at,
     completed_at: p.completed_at,

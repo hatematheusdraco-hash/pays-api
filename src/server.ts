@@ -8,9 +8,11 @@ import { closePool, ping } from './db.js';
 import { ApiError } from './lib/errors.js';
 import { startProcessor } from './engine/processor.js';
 import { startWebhookDispatcher } from './webhooks/dispatcher.js';
+import { checkoutRoutes } from './routes/checkout.js';
 import { healthRoutes } from './routes/health.js';
 import { merchantRoutes } from './routes/merchants.js';
 import { paymentRoutes } from './routes/payments.js';
+import { webRoutes } from './routes/web.js';
 import { webhookRoutes } from './routes/webhooks.js';
 
 export async function buildServer() {
@@ -69,8 +71,10 @@ export async function buildServer() {
   app.get('/openapi.json', { schema: { hide: true } }, () => openapiDocument);
 
   await app.register(healthRoutes);
+  await app.register(webRoutes);
   await app.register(merchantRoutes);
   await app.register(paymentRoutes);
+  await app.register(checkoutRoutes);
   await app.register(webhookRoutes);
 
   return app;

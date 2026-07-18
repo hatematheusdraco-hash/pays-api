@@ -1,6 +1,5 @@
 import { readdir, readFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { closePool, pool } from '../src/db.js';
 
 /**
@@ -8,7 +7,9 @@ import { closePool, pool } from '../src/db.js';
  * lexical order, tracking applied files in a _migrations table so re-runs are
  * idempotent. Fine for MVP; swap for Supabase CLI migrations in production.
  */
-const dir = join(dirname(fileURLToPath(import.meta.url)), '..', 'supabase', 'migrations');
+// Resolved from the working directory so it works under tsx (project root) and
+// in the Docker image (WORKDIR /app), where supabase/ sits next to dist/.
+const dir = join(process.cwd(), 'supabase', 'migrations');
 
 export async function runMigrations() {
   await pool.query(

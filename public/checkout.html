@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PayS Checkout</title>
+<style>
+  :root {
+    --bg: #0b1020; --card: #141a2e; --line: #24304d; --muted: #8b98b8;
+    --text: #eef2fb; --accent: #5b8cff; --good: #3ecf8e; --bad: #ff6b6b; --warn: #f7b955;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font: 15px/1.5 -apple-system, Segoe UI, Roboto, sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #16204010, transparent), var(--bg);
+    color: var(--text); display: grid; place-items: center; padding: 24px;
+  }
+  .card {
+    width: 100%; max-width: 440px; background: var(--card); border: 1px solid var(--line);
+    border-radius: 18px; padding: 26px; box-shadow: 0 30px 80px #0006;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: .3px; }
+  .brand .dot { width: 22px; height: 22px; border-radius: 7px;
+    background: linear-gradient(135deg, var(--accent), #9b6bff); }
+  .muted { color: var(--muted); }
+  .amount { font-size: 40px; font-weight: 800; margin: 18px 0 2px; }
+  .row { display: flex; justify-content: space-between; gap: 10px; }
+  h1 { font-size: 15px; margin: 22px 0 10px; font-weight: 600; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  button {
+    font: inherit; color: var(--text); background: #1d2540; border: 1px solid var(--line);
+    border-radius: 12px; padding: 12px 14px; cursor: pointer; transition: .15s;
+  }
+  button:hover { border-color: var(--accent); background: #232c4d; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #08122e; font-weight: 700; width: 100%; }
+  button.primary:hover { filter: brightness(1.08); }
+  button:disabled { opacity: .5; cursor: default; }
+  .coin { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .coin small { color: var(--muted); }
+  .box { background: #10162b; border: 1px dashed var(--line);
+    border-radius: 12px; padding: 12px 14px; word-break: break-all; font-family: ui-monospace, monospace; font-size: 13px; }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  .steps { list-style: none; padding: 0; margin: 14px 0 0; }
+  .steps li { display: flex; align-items: center; gap: 10px; padding: 6px 0; color: var(--muted); }
+  .steps li .ic { width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--line);
+    display: grid; place-items: center; font-size: 12px; flex: 0 0 auto; }
+  .steps li.done { color: var(--text); }
+  .steps li.done .ic { background: var(--good); border-color: var(--good); color: #06251a; }
+  .steps li.active .ic { border-color: var(--accent); }
+  .count { font-variant-numeric: tabular-nums; }
+  .hide { display: none; }
+  .center { text-align: center; }
+  .big { font-size: 46px; margin: 6px 0; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="row">
+    <div class="brand"><span class="dot"></span> PayS</div>
+    <span id="mode" class="pill" style="background:#2a2140;color:var(--warn)"></span>
+  </div>
+
+  <div id="err" class="box hide" style="border-color:var(--bad);color:var(--bad);margin-top:16px"></div>
+
+  <!-- Step: amount + currency picker -->
+  <section id="pick">
+    <div class="muted" id="merchant"></div>
+    <div class="amount"><span id="amount"></span> <span id="cur" class="muted" style="font-size:20px"></span></div>
+    <div class="muted" id="desc"></div>
+    <h1>Pay with</h1>
+    <div class="grid" id="coins"></div>
+  </section>
+
+  <!-- Step: deposit -->
+  <section id="deposit" class="hide">
+    <h1>Send exactly</h1>
+    <div class="amount" style="font-size:28px"><span id="cryptoAmt"></span> <span id="cryptoCur" class="muted"></span></div>
+    <div class="muted" style="margin-bottom:6px">to this <span id="netName"></span> address:</div>
+    <div class="box" id="addr"></div>
+    <div class="row" style="margin:12px 0">
+      <span class="muted">Quote expires in</span>
+      <span class="count" id="count" style="color:var(--warn);font-weight:700"></span>
+    </div>
+    <button id="simulate" class="primary">I've sent the payment (simulate)</button>
+    <div class="muted center" style="margin-top:10px;font-size:12px">Test mode — no real crypto is moved.</div>
+  </section>
+
+  <!-- Step: progress -->
+  <section id="progress" class="hide">
+    <h1>Payment status</h1>
+    <ul class="steps" id="steps"></ul>
+  </section>
+
+  <!-- Step: done -->
+  <section id="done" class="hide center">
+    <div class="big">✅</div>
+    <div style="font-size:20px;font-weight:700">Payment complete</div>
+    <div class="muted" style="margin-top:6px">The merchant has been paid <span id="doneAmt"></span>.</div>
+  </section>
+</div>
+
+<script>
+const path = location.pathname.split('/');
+const id = path[path.length - 1];
+const cs = new URLSearchParams(location.search).get('cs');
+const $ = (s) => document.querySelector(s);
+const show = (el, on = true) => $(el).classList.toggle('hide', !on);
+const fail = (m) => { $('#err').textContent = m; show('#err', true); };
+
+const STEP_ORDER = ['PAYMENT_DETECTED','CONFIRMING','CONVERTING','SETTLING','COMPLETED'];
+const STEP_LABEL = {
+  PAYMENT_DETECTED: 'Payment detected on-chain',
+  CONFIRMING: 'Waiting for confirmations',
+  CONVERTING: 'Converting crypto → fiat',
+  SETTLING: 'Paying out to merchant',
+  COMPLETED: 'Done',
+};
+
+async function api(method, url, body) {
+  const res = await fetch(url, {
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error?.message || ('HTTP ' + res.status));
+  return json;
+}
+const q = () => `?cs=${encodeURIComponent(cs)}`;
+
+let checkout;
+async function load() {
+  checkout = await api('GET', `/v1/checkout/${id}${q()}`);
+  $('#mode').textContent = checkout.test_mode ? 'TEST MODE' : 'LIVE';
+  $('#merchant').textContent = checkout.merchant_name;
+  $('#amount').textContent = checkout.amount.toFixed(2);
+  $('#cur').textContent = checkout.currency;
+  $('#desc').textContent = checkout.description || '';
+  if (checkout.status === 'CREATED') renderCoins();
+  else if (checkout.status === 'QUOTE_LOCKED') renderDeposit();
+  else if (checkout.status === 'COMPLETED') renderDone();
+  else renderProgress(checkout.status);
+}
+
+function renderCoins() {
+  show('#pick', true); show('#deposit', false); show('#progress', false);
+  const box = $('#coins'); box.innerHTML = '';
+  for (const c of checkout.supported_currencies) {
+    for (const net of c.networks) {
+      const b = document.createElement('button');
+      b.className = 'coin';
+      b.innerHTML = `<b>${c.currency}</b><small>${net}</small>`;
+      b.onclick = () => lockQuote(c.currency, net, b);
+      box.appendChild(b);
+    }
+  }
+}
+
+async function lockQuote(currency, network, btn) {
+  try {
+    document.querySelectorAll('#coins button').forEach((x) => (x.disabled = true));
+    btn.textContent = 'Locking price…';
+    checkout = await api('POST', `/v1/checkout/${id}/quote${q()}`, {
+      pay_currency: currency, pay_network: network,
+    });
+    renderDeposit();
+  } catch (e) { fail(e.message); renderCoins(); }
+}
+
+let timer;
+function renderDeposit() {
+  show('#pick', false); show('#deposit', true); show('#progress', false);
+  $('#cryptoAmt').textContent = Number(checkout.crypto.amount).toFixed(8);
+  $('#cryptoCur').textContent = checkout.crypto.currency;
+  $('#netName').textContent = checkout.crypto.network;
+  $('#addr').textContent = checkout.crypto.deposit_address;
+  const exp = new Date(checkout.expires_at || Date.now() + 30000).getTime();
+  clearInterval(timer);
+  timer = setInterval(() => {
+    const left = Math.max(0, Math.round((exp - Date.now()) / 1000));
+    $('#count').textContent = left + 's';
+    if (left <= 0) { clearInterval(timer); $('#count').textContent = 'expired'; }
+  }, 250);
+  $('#simulate').onclick = simulate;
+}
+
+async function simulate() {
+  try {
+    $('#simulate').disabled = true; $('#simulate').textContent = 'Processing…';
+    clearInterval(timer);
+    await api('POST', `/v1/checkout/${id}/simulate_payment${q()}`, {});
+    poll();
+  } catch (e) { fail(e.message); }
+}
+
+function renderProgress(status) {
+  show('#pick', false); show('#deposit', false); show('#progress', true);
+  const idx = STEP_ORDER.indexOf(status);
+  const ul = $('#steps'); ul.innerHTML = '';
+  STEP_ORDER.forEach((s, i) => {
+    const li = document.createElement('li');
+    const state = i < idx ? 'done' : i === idx ? 'active' : '';
+    li.className = state;
+    li.innerHTML = `<span class="ic">${i < idx ? '✓' : i + 1}</span>${STEP_LABEL[s]}`;
+    ul.appendChild(li);
+  });
+}
+
+function renderDone() {
+  clearInterval(timer);
+  show('#pick', false); show('#deposit', false); show('#progress', false); show('#done', true);
+  $('#doneAmt').textContent = `${checkout.amount.toFixed(2)} ${checkout.currency}`;
+}
+
+async function poll() {
+  renderProgress('PAYMENT_DETECTED');
+  const deadline = Date.now() + 30000;
+  while (Date.now() < deadline) {
+    checkout = await api('GET', `/v1/checkout/${id}${q()}`);
+    if (checkout.status === 'COMPLETED') return renderDone();
+    if (checkout.status === 'FAILED') return fail('Payment failed.');
+    renderProgress(checkout.status);
+    await new Promise((r) => setTimeout(r, 500));
+  }
+}
+
+if (!id || !cs) fail('Invalid checkout link.');
+else load().catch((e) => fail(e.message));
+</script>
+</body>
+</html>

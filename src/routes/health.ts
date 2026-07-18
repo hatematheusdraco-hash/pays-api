@@ -5,7 +5,7 @@ export async function healthRoutes(app: FastifyInstance): Promise<void> {
   app.get('/', async () => ({
     name: 'PayS — Any-to-Any Payment API',
     version: '0.1.0',
-    docs: 'see README.md',
+    links: { dashboard: '/dashboard', docs: '/docs', openapi: '/openapi.json' },
   }));
 
   app.get('/healthz', async (_req, reply) => {

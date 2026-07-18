@@ -39,4 +39,9 @@ export function newWebhookSecret(): string {
   return `whsec_${base58(randomBytes(24))}`;
 }
 
+/** Per-payment client secret used by the hosted checkout: `<paymentId>_secret_...`. */
+export function newClientSecret(paymentId: string): string {
+  return `${paymentId}_secret_${base58(randomBytes(18))}`;
+}
+
 export const uuid = randomUUID;

@@ -288,3 +288,45 @@ test('cannot refund a payment that is not COMPLETED', async () => {
   assert.equal(r.status, 409);
   assert.equal(r.json.error.code, 'payment_not_refundable');
 });
+
+test('checkout: public flow works with client_secret, rejects wrong secret', async () => {
+  const token = await onboard();
+  const p = await api('POST', '/v1/payments', { token, body: { amount: 25, currency: 'EUR' } });
+  const cs = p.json.client_secret as string;
+  assert.ok(cs && cs.startsWith(p.json.id), 'payment exposes a client_secret');
+
+  // wrong secret is rejected
+  const bad = await api('GET', `/v1/checkout/${p.json.id}?cs=nope`);
+  assert.equal(bad.status, 404);
+
+  // public view (no bearer token) works
+  const view = await api('GET', `/v1/checkout/${p.json.id}?cs=${encodeURIComponent(cs)}`);
+  assert.equal(view.status, 200);
+  assert.equal(view.json.object, 'checkout');
+  assert.equal(view.json.amount, 25);
+  assert.ok(Array.isArray(view.json.supported_currencies));
+
+  // lock a quote publicly
+  const quote = await api('POST', `/v1/checkout/${p.json.id}/quote?cs=${encodeURIComponent(cs)}`, {
+    body: { pay_currency: 'ETH', pay_network: 'ethereum' },
+  });
+  assert.equal(quote.status, 200);
+  assert.equal(quote.json.status, 'QUOTE_LOCKED');
+  assert.ok(quote.json.crypto.deposit_address);
+
+  // simulate deposit publicly, then it settles
+  const sim = await api('POST', `/v1/checkout/${p.json.id}/simulate_payment?cs=${encodeURIComponent(cs)}`, {
+    body: {},
+  });
+  assert.equal(sim.status, 200);
+  await waitForStatus(token, p.json.id, 'COMPLETED');
+});
+
+test('web pages are served', async () => {
+  const dash = await fetch(base + '/dashboard');
+  assert.equal(dash.status, 200);
+  assert.match(await dash.text(), /Merchant Dashboard/);
+  const co = await fetch(base + '/checkout/pay_x');
+  assert.equal(co.status, 200);
+  assert.match(await co.text(), /PayS Checkout/);
+});

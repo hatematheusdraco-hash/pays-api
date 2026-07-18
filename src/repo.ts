@@ -4,6 +4,7 @@ import type { Merchant, Payment, Quote, Refund, WebhookEndpoint } from './types.
 import {
   newApiKeyId,
   newApiSecret,
+  newClientSecret,
   newMerchantId,
   newPaymentId,
   newRefundId,
@@ -90,15 +91,18 @@ export async function createPayment(input: {
   settlement_destination: Record<string, unknown>;
   description: string | null;
   metadata: Record<string, unknown>;
+  livemode: boolean;
 }): Promise<Payment> {
+  const id = newPaymentId();
   const row = await one<Payment>(
     `insert into payments
        (id, merchant_id, status, settlement_currency, amount_fiat,
-        settlement_method, settlement_destination, description, metadata)
-     values ($1, $2, 'CREATED', $3, $4, $5, $6, $7, $8)
+        settlement_method, settlement_destination, description, metadata,
+        client_secret, livemode)
+     values ($1, $2, 'CREATED', $3, $4, $5, $6, $7, $8, $9, $10)
      returning *`,
     [
-      newPaymentId(),
+      id,
       input.merchant_id,
       input.settlement_currency,
       input.amount_fiat,
@@ -106,9 +110,24 @@ export async function createPayment(input: {
       input.settlement_destination,
       input.description,
       input.metadata,
+      newClientSecret(id),
+      input.livemode,
     ],
   );
   return row!;
+}
+
+/** Look up a payment by id, verifying the client_secret matches (checkout auth). */
+export async function getPaymentByClientSecret(
+  id: string,
+  clientSecret: string,
+  client?: Sql,
+): Promise<Payment | null> {
+  return one<Payment>(
+    `select * from payments where id = $1 and client_secret = $2`,
+    [id, clientSecret],
+    client,
+  );
 }
 
 export async function getPayment(

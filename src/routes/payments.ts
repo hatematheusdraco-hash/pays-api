@@ -50,6 +50,7 @@ export async function paymentRoutes(app: FastifyInstance): Promise<void> {
         body.settlement_destination ?? merchant.settlement_destination,
       description: body.description ?? null,
       metadata: body.metadata,
+      livemode: req.livemode ?? false,
     });
     return reply.code(201).send(serializePayment(payment));
   });

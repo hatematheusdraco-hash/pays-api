@@ -16,6 +16,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY supabase ./supabase
+COPY public ./public
 EXPOSE 3000
 # DATABASE_URL is provided at runtime (e.g. Supabase pooler string).
 CMD ["node", "dist/src/server.js"]
