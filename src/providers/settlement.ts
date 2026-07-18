@@ -31,10 +31,18 @@ class PayoneerProvider implements SettlementProvider {
   }
 }
 
+class CardPayoutProvider implements SettlementProvider {
+  method = SettlementMethod.CARD;
+  async settle(): Promise<SettlementResult> {
+    return { provider: 'card_rail', reference: prefixedId('card'), etaSeconds: 3_600 };
+  }
+}
+
 const providers: Record<string, SettlementProvider> = {
   [SettlementMethod.SEPA]: new RailsrSepaProvider(),
   [SettlementMethod.USDC]: new CircleUsdcProvider(),
   [SettlementMethod.PAYONEER]: new PayoneerProvider(),
+  [SettlementMethod.CARD]: new CardPayoutProvider(),
 };
 
 export function settlementProviderFor(method: string): SettlementProvider {

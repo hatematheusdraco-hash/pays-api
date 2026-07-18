@@ -6,6 +6,7 @@ const settlementMethod = z.enum([
   SettlementMethod.SEPA,
   SettlementMethod.USDC,
   SettlementMethod.PAYONEER,
+  SettlementMethod.CARD,
 ]);
 
 export const createMerchantSchema = z.object({

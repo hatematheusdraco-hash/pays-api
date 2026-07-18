@@ -71,7 +71,8 @@
         <div>
           <label>Method</label>
           <select id="smethod">
-            <option value="sepa">SEPA bank transfer (EUR)</option>
+            <option value="sepa">SEPA bank transfer (IBAN)</option>
+            <option value="card">Bank card</option>
             <option value="usdc">USDC to wallet</option>
             <option value="payoneer">Payoneer</option>
           </select>
@@ -142,10 +143,13 @@ $('#create').onclick = async () => {
 $('#connect').onclick = () => { KEY = $('#key').value.trim(); connect(); };
 $('#logout').onclick = () => { localStorage.removeItem('pays_key'); location.reload(); };
 
-const DEST_KEY = { sepa: 'iban', usdc: 'address', payoneer: 'email' };
-const DEST_LABEL = { sepa: 'IBAN', usdc: 'Wallet address', payoneer: 'Payoneer email' };
+const DEST_KEY = { sepa: 'iban', card: 'card', usdc: 'address', payoneer: 'email' };
+const DEST_LABEL = {
+  sepa: 'IBAN', card: 'Card number', usdc: 'Wallet address', payoneer: 'Payoneer email',
+};
 const DEST_PLACEHOLDER = {
   sepa: 'DE89 3704 0044 0532 0130 00',
+  card: '4242 4242 4242 4242',
   usdc: '0x1234…abcd',
   payoneer: 'you@example.com',
 };

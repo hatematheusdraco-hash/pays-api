@@ -15,9 +15,10 @@ export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
 
 /** Settlement methods a merchant can receive funds through (§Layer 4). */
 export const SettlementMethod = {
-  SEPA: 'sepa', // Railsr / Modulr — EUR bank transfer
+  SEPA: 'sepa', // Railsr / Modulr — EUR bank transfer (IBAN)
   USDC: 'usdc', // Circle — stablecoin to wallet
   PAYONEER: 'payoneer',
+  CARD: 'card', // payout to a bank card
 } as const;
 export type SettlementMethod = (typeof SettlementMethod)[keyof typeof SettlementMethod];
 
