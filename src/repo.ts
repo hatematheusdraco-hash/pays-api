@@ -41,6 +41,23 @@ export async function getMerchant(id: string): Promise<Merchant | null> {
   return one<Merchant>(`select * from merchants where id = $1`, [id]);
 }
 
+/** Update where a merchant receives payouts (method and/or destination). */
+export async function updateMerchantSettlement(
+  id: string,
+  method: string | null,
+  destination: Record<string, unknown> | null,
+): Promise<Merchant> {
+  const row = await one<Merchant>(
+    `update merchants
+        set settlement_method = coalesce($2, settlement_method),
+            settlement_destination = coalesce($3::jsonb, settlement_destination)
+      where id = $1
+      returning *`,
+    [id, method, destination ? JSON.stringify(destination) : null],
+  );
+  return row!;
+}
+
 // --- API keys -------------------------------------------------------------
 
 export async function issueApiKey(

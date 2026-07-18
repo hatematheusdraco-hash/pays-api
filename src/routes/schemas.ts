@@ -15,6 +15,11 @@ export const createMerchantSchema = z.object({
   settlement_destination: z.record(z.unknown()).default({}),
 });
 
+export const updateMerchantSchema = z.object({
+  settlement_method: settlementMethod.optional(),
+  settlement_destination: z.record(z.unknown()).optional(),
+});
+
 export const createPaymentSchema = z.object({
   // amount in the settlement currency's major unit (e.g. 49.99 EUR)
   amount: z.number().positive().max(1_000_000),

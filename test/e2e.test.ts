@@ -156,6 +156,18 @@ test('onboard + retrieve merchant', async () => {
   assert.equal(me.json.object, 'merchant');
 });
 
+test('update payout settings (where funds are received)', async () => {
+  const token = await onboard();
+  const upd = await api('PATCH', '/v1/merchants/me', {
+    token,
+    body: { settlement_method: 'usdc', settlement_destination: { address: '0xabc123' } },
+  });
+  assert.equal(upd.status, 200);
+  assert.equal(upd.json.settlement_method, 'usdc');
+  const me = await api('GET', '/v1/merchants/me', { token });
+  assert.equal(me.json.settlement_destination.address, '0xabc123');
+});
+
 test('validation rejects a bad payment body', async () => {
   const token = await onboard();
   const r = await api('POST', '/v1/payments', { token, body: { amount: -5, currency: 'EUR' } });

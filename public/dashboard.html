@@ -65,6 +65,27 @@
   <!-- Create payment -->
   <section id="app" class="hide">
     <div class="card">
+      <h2>Payouts — where you receive funds</h2>
+      <p class="muted" style="margin-top:-6px">Payments settle here after each purchase.</p>
+      <div class="rowf">
+        <div>
+          <label>Method</label>
+          <select id="smethod">
+            <option value="sepa">SEPA bank transfer (EUR)</option>
+            <option value="usdc">USDC to wallet</option>
+            <option value="payoneer">Payoneer</option>
+          </select>
+        </div>
+        <div>
+          <label id="sdestLabel">IBAN</label>
+          <input id="sdest" placeholder="DE89 3704 0044 0532 0130 00" />
+        </div>
+      </div>
+      <button id="savePayout">Save payout details</button>
+      <span id="payoutSaved" class="muted hide" style="margin-left:12px">Saved ✓</span>
+    </div>
+
+    <div class="card">
       <h2>New payment</h2>
       <div class="rowf">
         <div><label>Amount</label><input id="amt" type="number" value="49.99" step="0.01" /></div>
@@ -109,6 +130,7 @@ $('#create').onclick = async () => {
   try {
     const r = await api('POST', '/v1/merchants', {
       name: 'Test Merchant', email: 'test+' + Date.now() + '@pays.dev', settlement_method: 'sepa',
+      settlement_destination: { iban: 'DE89 3704 0044 0532 0130 00', name: 'Test Merchant GmbH' },
     });
     KEY = r.api_key.secret;
     $('#newkey').innerHTML = 'Your API key (save it): <code>' + KEY + '</code>';
@@ -120,6 +142,19 @@ $('#create').onclick = async () => {
 $('#connect').onclick = () => { KEY = $('#key').value.trim(); connect(); };
 $('#logout').onclick = () => { localStorage.removeItem('pays_key'); location.reload(); };
 
+const DEST_KEY = { sepa: 'iban', usdc: 'address', payoneer: 'email' };
+const DEST_LABEL = { sepa: 'IBAN', usdc: 'Wallet address', payoneer: 'Payoneer email' };
+const DEST_PLACEHOLDER = {
+  sepa: 'DE89 3704 0044 0532 0130 00',
+  usdc: '0x1234…abcd',
+  payoneer: 'you@example.com',
+};
+function updateDestLabel() {
+  const m = $('#smethod').value;
+  $('#sdestLabel').textContent = DEST_LABEL[m];
+  $('#sdest').placeholder = DEST_PLACEHOLDER[m];
+}
+
 async function connect() {
   if (!KEY) return fail('Enter an API key.');
   try {
@@ -127,9 +162,31 @@ async function connect() {
     localStorage.setItem('pays_key', KEY);
     $('#who').textContent = me.name + ' · ' + me.email;
     show('#auth', false); show('#app', true); show('#logout', true);
+    fillPayout(me);
     loadPayments();
   } catch (e) { fail('Could not connect: ' + e.message); }
 }
+
+function fillPayout(me) {
+  $('#smethod').value = me.settlement_method || 'sepa';
+  updateDestLabel();
+  const key = DEST_KEY[$('#smethod').value];
+  const dest = me.settlement_destination || {};
+  $('#sdest').value = dest[key] || '';
+}
+
+$('#smethod').onchange = updateDestLabel;
+$('#savePayout').onclick = async () => {
+  try {
+    const method = $('#smethod').value;
+    const dest = {}; dest[DEST_KEY[method]] = $('#sdest').value.trim();
+    await api('PATCH', '/v1/merchants/me', {
+      settlement_method: method, settlement_destination: dest,
+    });
+    show('#payoutSaved', true);
+    setTimeout(() => show('#payoutSaved', false), 2500);
+  } catch (e) { fail(e.message); }
+};
 
 $('#createPay').onclick = async () => {
   try {
