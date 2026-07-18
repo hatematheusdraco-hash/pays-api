@@ -1,0 +1,18 @@
+# Render Blueprint — deploys the PayS API as an always-on web service.
+# Reuses the existing Supabase PAYS database (set DATABASE_URL in the dashboard).
+#
+# Deploy: Render → New → Blueprint → pick this repo → fill DATABASE_URL → Apply.
+services:
+  - type: web
+    name: pays-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: npm ci && npm run build
+    startCommand: node dist/scripts/migrate.js && node dist/src/server.js
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false # set this in the Render dashboard (Supabase pooler string)
