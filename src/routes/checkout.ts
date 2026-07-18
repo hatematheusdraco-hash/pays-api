@@ -81,27 +81,50 @@ export async function checkoutRoutes(app: FastifyInstance): Promise<void> {
       if (!payment || payment.client_secret !== cs) {
         throw notFound(`No such checkout: ${req.params.id}`);
       }
-      if (payment.status !== PaymentStatus.CREATED) {
-        throw conflict(`Checkout is ${payment.status}; a quote is already locked.`);
+      // Allow choosing a currency (CREATED) or changing it before paying
+      // (QUOTE_LOCKED → re-quote with the newly picked currency).
+      if (
+        payment.status !== PaymentStatus.CREATED &&
+        payment.status !== PaymentStatus.QUOTE_LOCKED
+      ) {
+        throw conflict(`Checkout is ${payment.status}; the currency can no longer be changed.`);
       }
       const quote = await buildQuote(payment, body.pay_currency, body.pay_network);
       await insertQuote(quote, client);
-      const updated = await applyTransition(
-        client,
-        payment,
-        PaymentStatus.QUOTE_LOCKED,
-        {
-          pay_currency: quote.pay_currency,
-          pay_network: quote.pay_network,
-          amount_crypto: quote.amount_crypto,
-          exchange_rate: quote.exchange_rate,
-          network_fee: quote.network_fee,
-          pays_fee: quote.pays_fee,
-          deposit_address: quote.deposit_address,
+
+      const fields = {
+        pay_currency: quote.pay_currency,
+        pay_network: quote.pay_network,
+        amount_crypto: quote.amount_crypto,
+        exchange_rate: quote.exchange_rate,
+        network_fee: quote.network_fee,
+        pays_fee: quote.pays_fee,
+        deposit_address: quote.deposit_address,
+        quote_id: quote.id,
+      };
+
+      let updated: Payment;
+      if (payment.status === PaymentStatus.CREATED) {
+        updated = await applyTransition(client, payment, PaymentStatus.QUOTE_LOCKED, fields, {
           quote_id: quote.id,
-        },
-        { quote_id: quote.id, provider: quote.provider, via: 'checkout' },
-      );
+          provider: quote.provider,
+          via: 'checkout',
+        });
+      } else {
+        // Re-quote in place — no state change, just swap the locked quote.
+        const { rows } = await client.query<Payment>(
+          `update payments set
+             pay_currency = $2, pay_network = $3, amount_crypto = $4, exchange_rate = $5,
+             network_fee = $6, pays_fee = $7, deposit_address = $8, quote_id = $9, updated_at = now()
+           where id = $1 returning *`,
+          [
+            payment.id, fields.pay_currency, fields.pay_network, fields.amount_crypto,
+            fields.exchange_rate, fields.network_fee, fields.pays_fee, fields.deposit_address,
+            fields.quote_id,
+          ],
+        );
+        updated = rows[0]!;
+      }
       const merchant = await getMerchant(updated.merchant_id);
       return {
         ...serializeCheckout(updated, merchant?.name ?? 'Merchant'),

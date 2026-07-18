@@ -83,6 +83,7 @@
       <span class="count" id="count" style="color:var(--warn);font-weight:700"></span>
     </div>
     <button id="simulate" class="primary">I've sent the payment (simulate)</button>
+    <button id="change" style="width:100%;margin-top:8px">← Change currency</button>
     <div class="muted center" style="margin-top:10px;font-size:12px">Test mode — no real crypto is moved.</div>
   </section>
 
@@ -184,6 +185,7 @@ function renderDeposit() {
     if (left <= 0) { clearInterval(timer); $('#count').textContent = 'expired'; }
   }, 250);
   $('#simulate').onclick = simulate;
+  $('#change').onclick = () => { clearInterval(timer); renderCoins(); };
 }
 
 async function simulate() {
