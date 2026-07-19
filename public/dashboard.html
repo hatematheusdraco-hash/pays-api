@@ -4,46 +4,58 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>PayS Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0b1020; --card: #141a2e; --line: #24304d; --muted: #8b98b8;
-    --text: #eef2fb; --accent: #5b8cff; --good: #3ecf8e; --bad: #ff6b6b; --warn: #f7b955;
+    --bg: #000000; --bg-raise: #08090c; --card: #0c0e13; --line: #191c24; --line-soft: #12141a;
+    --text: #f4f6fb; --muted: #9aa2b4; --faint: #5c6478;
+    --cyan: #22e2f2; --cyan-deep: #0bb6d4; --cyan-glow: rgba(34,226,242,.16);
+    --good: #22e2f2; --bad: #ff6b6b; --warn: #f7b955;
+    --disp: 'Space Grotesk', sans-serif; --body: 'Inter', sans-serif; --mono: 'JetBrains Mono', monospace;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 15px/1.5 -apple-system, Segoe UI, Roboto, sans-serif;
-    background: var(--bg); color: var(--text); }
+  body { margin: 0; font-family: var(--body); font-size: 15px; line-height: 1.5;
+    background: var(--bg); color: var(--text); -webkit-font-smoothing: antialiased; }
+  ::selection { background: var(--cyan); color: #000; }
   header { display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 16px 22px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #0b1020ee; backdrop-filter: blur(8px); }
-  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; }
-  .brand .dot { width: 22px; height: 22px; border-radius: 7px; background: linear-gradient(135deg, var(--accent), #9b6bff); }
-  main { max-width: 900px; margin: 0 auto; padding: 22px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 18px; }
-  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); margin: 0 0 14px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
-  input, select { width: 100%; font: inherit; color: var(--text); background: #10162b;
-    border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+    padding: 16px 24px; border-bottom: 1px solid var(--line); position: sticky; top: 0;
+    background: rgba(0,0,0,.6); backdrop-filter: blur(14px); z-index: 10; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--disp); font-weight: 600; font-size: 17px; letter-spacing: -.01em; }
+  .brand .dot { width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center;
+    color: #000; font-weight: 700; font-size: 13px; box-shadow: 0 0 22px var(--cyan-glow);
+    background: linear-gradient(135deg, var(--cyan), var(--cyan-deep)); }
+  main { max-width: 900px; margin: 0 auto; padding: 26px 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; margin-bottom: 18px; }
+  h2 { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .18em; color: var(--cyan); margin: 0 0 14px; font-weight: 500; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 5px; }
+  input, select { width: 100%; font-family: var(--body); font-size: 15px; color: var(--text); background: var(--bg-raise);
+    border: 1px solid var(--line); border-radius: 9px; padding: 11px 13px; }
+  input:focus, select:focus { outline: none; border-color: var(--cyan); }
   .rowf { display: flex; gap: 12px; flex-wrap: wrap; } .rowf > div { flex: 1; min-width: 140px; }
-  button { font: inherit; color: #08122e; background: var(--accent); border: 0; border-radius: 10px;
-    padding: 10px 16px; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  button { font-family: var(--body); font-size: 14px; color: #000; background: var(--cyan); border: 0; border-radius: 9px;
+    padding: 11px 18px; font-weight: 600; cursor: pointer; margin-top: 14px; transition: .2s; }
+  button:hover { background: #4aeaf7; box-shadow: 0 8px 34px var(--cyan-glow); }
   button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 500; }
-  button:hover { filter: brightness(1.08); }
+  button.ghost:hover { background: transparent; border-color: var(--cyan); color: var(--cyan); box-shadow: none; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
-  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
-  code { font-family: ui-monospace, monospace; font-size: 12px; color: var(--accent); word-break: break-all; }
-  .pill { padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
-  .s-COMPLETED { background: #123524; color: var(--good); }
-  .s-FAILED, .s-CANCELED { background: #351a1a; color: var(--bad); }
-  .s-CREATED, .s-QUOTE_LOCKED, .s-PAYMENT_DETECTED, .s-CONFIRMING, .s-CONVERTING, .s-SETTLING { background: #2a2140; color: var(--warn); }
+  th, td { text-align: left; padding: 11px 8px; border-bottom: 1px solid var(--line); }
+  th { color: var(--faint); font-family: var(--mono); font-weight: 500; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; }
+  code { font-family: var(--mono); font-size: 12px; color: var(--cyan); word-break: break-all; }
+  .pill { padding: 4px 10px; border-radius: 100px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .06em; font-weight: 500; text-transform: uppercase; }
+  .s-COMPLETED { background: rgba(34,226,242,.12); color: var(--cyan); }
+  .s-FAILED, .s-CANCELED { background: rgba(255,107,107,.12); color: var(--bad); }
+  .s-CREATED, .s-QUOTE_LOCKED, .s-PAYMENT_DETECTED, .s-CONFIRMING, .s-CONVERTING, .s-SETTLING { background: rgba(247,185,85,.12); color: var(--warn); }
   .muted { color: var(--muted); } .hide { display: none; }
-  .note { background: #10162b; border: 1px dashed var(--line); border-radius: 10px; padding: 12px; margin-top: 12px; word-break: break-all; }
-  a { color: var(--accent); }
+  .note { background: var(--bg-raise); border: 1px dashed var(--line); border-radius: 9px; padding: 12px; margin-top: 12px; word-break: break-all; font-family: var(--mono); font-size: 13px; }
+  a { color: var(--cyan); }
   .flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><span class="dot"></span> PayS · Merchant Dashboard</div>
+  <div class="brand"><span class="dot">P</span> PayS · Merchant Dashboard</div>
   <div class="flex"><span id="who" class="muted"></span><button id="logout" class="ghost hide">Log out</button></div>
 </header>
 <main>
