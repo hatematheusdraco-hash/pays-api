@@ -51,25 +51,38 @@
   .note { background: var(--bg-raise); border: 1px dashed var(--line); border-radius: 9px; padding: 12px; margin-top: 12px; word-break: break-all; font-family: var(--mono); font-size: 13px; }
   a { color: var(--cyan); }
   .flex { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .lang { display: inline-flex; gap: 2px; border: 1px solid var(--line); border-radius: 9px; padding: 3px; background: var(--bg-raise); }
+  .lang-btn { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    background: transparent; color: var(--faint); border: none; cursor: pointer; padding: 5px 9px; border-radius: 6px; transition: .18s; line-height: 1; margin: 0; }
+  .lang-btn:hover { color: var(--text); background: transparent; box-shadow: none; }
+  .lang-btn.active { background: var(--cyan); color: #000; font-weight: 500; }
 </style>
 </head>
 <body>
 <header>
   <div class="brand"><span class="dot">P</span> PayS · Merchant Dashboard</div>
-  <div class="flex"><span id="who" class="muted"></span><button id="logout" class="ghost hide">Log out</button></div>
+  <div class="flex">
+    <span id="who" class="muted"></span>
+    <div class="lang">
+      <button class="lang-btn" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="ru">RU</button>
+      <button class="lang-btn" data-lang="uk">UK</button>
+    </div>
+    <button id="logout" class="ghost hide" data-i18n="logout">Log out</button>
+  </div>
 </header>
 <main>
   <div id="err" class="card hide" style="border-color:var(--bad);color:var(--bad)"></div>
 
   <!-- Onboarding / login -->
   <section id="auth" class="card">
-    <h2>Connect</h2>
-    <p class="muted">Paste an existing API key, or create a test account to get one.</p>
-    <label>API key (sk_test_…)</label>
+    <h2 data-i18n="connect">Connect</h2>
+    <p class="muted" data-i18n="connectHint">Paste an existing API key, or create a test account to get one.</p>
+    <label data-i18n="apiKeyLabel">API key (sk_test_…)</label>
     <input id="key" placeholder="sk_test_…" autocomplete="off" />
     <div class="flex">
-      <button id="connect">Connect</button>
-      <button id="create" class="ghost">Create test account</button>
+      <button id="connect" data-i18n="connectBtn">Connect</button>
+      <button id="create" class="ghost" data-i18n="createAcc">Create test account</button>
     </div>
     <div id="newkey" class="note hide"></div>
   </section>
@@ -77,16 +90,17 @@
   <!-- Create payment -->
   <section id="app" class="hide">
     <div class="card">
-      <h2>Payouts — where you receive funds</h2>
-      <p class="muted" style="margin-top:-6px">Payments settle here after each purchase.</p>
+      <h2 data-i18n="payouts">Payouts — where you receive funds</h2>
+      <p class="muted" style="margin-top:-6px" data-i18n="payoutsHint">Payments settle here after each purchase.</p>
       <div class="rowf">
         <div>
-          <label>Method</label>
+          <label data-i18n="method">Method</label>
           <select id="smethod">
-            <option value="sepa">SEPA bank transfer (IBAN)</option>
-            <option value="card">Bank card</option>
-            <option value="usdc">USDC to wallet</option>
-            <option value="payoneer">Payoneer</option>
+            <option value="sepa" data-i18n="optSepa">SEPA bank transfer (IBAN)</option>
+            <option value="ach" data-i18n="optAch">US bank account (ACH)</option>
+            <option value="card" data-i18n="optCard">Bank card</option>
+            <option value="usdc" data-i18n="optUsdc">USDC to wallet</option>
+            <option value="payoneer" data-i18n="optPayoneer">Payoneer</option>
           </select>
         </div>
         <div>
@@ -94,29 +108,29 @@
           <input id="sdest" placeholder="DE89 3704 0044 0532 0130 00" />
         </div>
       </div>
-      <button id="savePayout">Save payout details</button>
-      <span id="payoutSaved" class="muted hide" style="margin-left:12px">Saved ✓</span>
+      <button id="savePayout" data-i18n="savePayout">Save payout details</button>
+      <span id="payoutSaved" class="muted hide" style="margin-left:12px" data-i18n="saved">Saved ✓</span>
     </div>
 
     <div class="card">
-      <h2>New payment</h2>
+      <h2 data-i18n="newPayment">New payment</h2>
       <div class="rowf">
-        <div><label>Amount</label><input id="amt" type="number" value="49.99" step="0.01" /></div>
-        <div><label>Currency</label><select id="ccy"><option>EUR</option><option>USD</option><option>USDC</option></select></div>
-        <div><label>Description</label><input id="pdesc" value="Pro plan — monthly" /></div>
+        <div><label data-i18n="amount">Amount</label><input id="amt" type="number" value="49.99" step="0.01" /></div>
+        <div><label data-i18n="currency">Currency</label><select id="ccy"><option>EUR</option><option>USD</option><option>USDC</option></select></div>
+        <div><label data-i18n="description">Description</label><input id="pdesc" value="Pro plan — monthly" /></div>
       </div>
-      <button id="createPay">Create payment + checkout link</button>
+      <button id="createPay" data-i18n="createPay">Create payment + checkout link</button>
       <div id="link" class="note hide"></div>
     </div>
 
     <div class="card">
       <div class="flex" style="justify-content:space-between">
-        <h2 style="margin:0">Payments</h2>
-        <button id="refresh" class="ghost" style="margin:0">Refresh</button>
+        <h2 style="margin:0" data-i18n="payments">Payments</h2>
+        <button id="refresh" class="ghost" style="margin:0" data-i18n="refresh">Refresh</button>
       </div>
       <table style="margin-top:14px">
-        <thead><tr><th>ID</th><th>Amount</th><th>Status</th><th>Crypto</th><th></th></tr></thead>
-        <tbody id="rows"><tr><td colspan="5" class="muted">No payments yet.</td></tr></tbody>
+        <thead><tr><th>ID</th><th data-i18n="thAmount">Amount</th><th data-i18n="thStatus">Status</th><th data-i18n="thCrypto">Crypto</th><th data-i18n="thPayout">Payout to</th><th></th></tr></thead>
+        <tbody id="rows"><tr><td colspan="6" class="muted">No payments yet.</td></tr></tbody>
       </table>
     </div>
   </section>
@@ -127,6 +141,58 @@ const $ = (s) => document.querySelector(s);
 const show = (s, on = true) => $(s).classList.toggle('hide', !on);
 const fail = (m) => { $('#err').textContent = m; show('#err', true); setTimeout(() => show('#err', false), 6000); };
 let KEY = localStorage.getItem('pays_key') || '';
+
+// --- i18n (EN / RU / UK) ---
+const T = {
+  en: {
+    logout: 'Log out', connect: 'Connect',
+    connectHint: 'Paste an existing API key, or create a test account to get one.',
+    apiKeyLabel: 'API key (sk_test_…)', connectBtn: 'Connect', createAcc: 'Create test account',
+    payouts: 'Payouts — where you receive funds', payoutsHint: 'Payments settle here after each purchase.',
+    method: 'Method', savePayout: 'Save payout details', saved: 'Saved ✓',
+    newPayment: 'New payment', amount: 'Amount', currency: 'Currency', description: 'Description',
+    createPay: 'Create payment + checkout link', payments: 'Payments', refresh: 'Refresh',
+    thAmount: 'Amount', thStatus: 'Status', thCrypto: 'Crypto', thPayout: 'Payout to',
+    noPayments: 'No payments yet.', openCheckout: 'Open checkout →',
+    optSepa: 'SEPA bank transfer (IBAN)', optAch: 'US bank account (ACH)', optCard: 'Bank card',
+    optUsdc: 'USDC to wallet', optPayoneer: 'Payoneer',
+  },
+  ru: {
+    logout: 'Выйти', connect: 'Подключение',
+    connectHint: 'Вставьте существующий API-ключ или создайте тестовый аккаунт.',
+    apiKeyLabel: 'API-ключ (sk_test_…)', connectBtn: 'Войти', createAcc: 'Создать тестовый аккаунт',
+    payouts: 'Выплаты — куда вы получаете деньги', payoutsHint: 'Сюда поступают деньги после каждой оплаты.',
+    method: 'Способ', savePayout: 'Сохранить реквизиты', saved: 'Сохранено ✓',
+    newPayment: 'Новый платёж', amount: 'Сумма', currency: 'Валюта', description: 'Описание',
+    createPay: 'Создать платёж + ссылку', payments: 'Платежи', refresh: 'Обновить',
+    thAmount: 'Сумма', thStatus: 'Статус', thCrypto: 'Крипта', thPayout: 'Выплата',
+    noPayments: 'Платежей пока нет.', openCheckout: 'Открыть оплату →',
+    optSepa: 'SEPA-перевод (IBAN)', optAch: 'Счёт в США (ACH)', optCard: 'Банковская карта',
+    optUsdc: 'USDC на кошелёк', optPayoneer: 'Payoneer',
+  },
+  uk: {
+    logout: 'Вийти', connect: 'Підключення',
+    connectHint: 'Вставте наявний API-ключ або створіть тестовий акаунт.',
+    apiKeyLabel: 'API-ключ (sk_test_…)', connectBtn: 'Увійти', createAcc: 'Створити тестовий акаунт',
+    payouts: 'Виплати — куди ви отримуєте кошти', payoutsHint: 'Сюди надходять кошти після кожної оплати.',
+    method: 'Спосіб', savePayout: 'Зберегти реквізити', saved: 'Збережено ✓',
+    newPayment: 'Новий платіж', amount: 'Сума', currency: 'Валюта', description: 'Опис',
+    createPay: 'Створити платіж + посилання', payments: 'Платежі', refresh: 'Оновити',
+    thAmount: 'Сума', thStatus: 'Статус', thCrypto: 'Крипта', thPayout: 'Виплата',
+    noPayments: 'Платежів поки немає.', openCheckout: 'Відкрити оплату →',
+    optSepa: 'SEPA-переказ (IBAN)', optAch: 'Рахунок у США (ACH)', optCard: 'Банківська картка',
+    optUsdc: 'USDC на гаманець', optPayoneer: 'Payoneer',
+  },
+};
+let LANG = localStorage.getItem('pays_lang') || 'en';
+const t = (k) => (T[LANG] && T[LANG][k]) || T.en[k] || k;
+function applyLang(lang) {
+  LANG = lang; localStorage.setItem('pays_lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('.lang-btn').forEach((b) => b.classList.toggle('active', b.dataset.lang === lang));
+  if (KEY && !$('#app').classList.contains('hide')) loadPayments();
+}
+document.querySelectorAll('.lang-btn').forEach((b) => (b.onclick = () => applyLang(b.dataset.lang)));
 
 async function api(method, path, body) {
   const res = await fetch(path, {
@@ -155,16 +221,19 @@ $('#create').onclick = async () => {
 $('#connect').onclick = () => { KEY = $('#key').value.trim(); connect(); };
 $('#logout').onclick = () => { localStorage.removeItem('pays_key'); location.reload(); };
 
-const DEST_KEY = { sepa: 'iban', card: 'card', usdc: 'address', payoneer: 'email' };
+const DEST_KEY = { sepa: 'iban', ach: 'account', card: 'card', usdc: 'address', payoneer: 'email' };
 const DEST_LABEL = {
-  sepa: 'IBAN', card: 'Card number', usdc: 'Wallet address', payoneer: 'Payoneer email',
+  sepa: 'IBAN', ach: 'Account & routing number', card: 'Card number',
+  usdc: 'Wallet address', payoneer: 'Payoneer email',
 };
 const DEST_PLACEHOLDER = {
   sepa: 'DE89 3704 0044 0532 0130 00',
+  ach: '123456789 / 021000021',
   card: '4242 4242 4242 4242',
   usdc: '0x1234…abcd',
   payoneer: 'you@example.com',
 };
+const METHOD_SHORT = { sepa: 'SEPA', ach: 'ACH', card: 'Card', usdc: 'USDC', payoneer: 'Payoneer' };
 function updateDestLabel() {
   const m = $('#smethod').value;
   $('#sdestLabel').textContent = DEST_LABEL[m];
@@ -224,21 +293,28 @@ async function loadPayments() {
   try {
     const list = await api('GET', '/v1/payments');
     const rows = $('#rows');
-    if (!list.data.length) { rows.innerHTML = '<tr><td colspan="5" class="muted">No payments yet.</td></tr>'; return; }
+    if (!list.data.length) { rows.innerHTML = '<tr><td colspan="6" class="muted">' + t('noPayments') + '</td></tr>'; return; }
     rows.innerHTML = list.data.map((p) => {
       const url = location.origin + '/checkout/' + p.id + '?cs=' + encodeURIComponent(p.client_secret);
       const crypto = p.crypto ? (Number(p.crypto.amount).toFixed(6) + ' ' + p.crypto.currency) : '—';
       const open = ['CREATED','QUOTE_LOCKED'].includes(p.status)
-        ? '<a href="' + url + '" target="_blank">Open checkout →</a>' : '';
+        ? '<a href="' + url + '" target="_blank">' + t('openCheckout') + '</a>' : '';
+      const sm = p.settlement || {};
+      const dkey = DEST_KEY[sm.method] || 'iban';
+      const dval = (sm.destination && sm.destination[dkey]) || '';
+      const short = dval ? (dval.length > 16 ? dval.slice(0, 8) + '…' + dval.slice(-4) : dval) : '';
+      const payout = (METHOD_SHORT[sm.method] || sm.method || '—') + (short ? ' · ' + short : '');
       return '<tr><td><code>' + p.id + '</code></td>' +
         '<td>' + p.amount.toFixed(2) + ' ' + p.currency + '</td>' +
         '<td><span class="pill s-' + p.status + '">' + p.status + '</span></td>' +
         '<td class="muted">' + crypto + '</td>' +
+        '<td class="muted">' + payout + '</td>' +
         '<td>' + open + '</td></tr>';
     }).join('');
   } catch (e) { fail(e.message); }
 }
 
+applyLang(LANG);
 if (KEY) { $('#key').value = KEY; connect(); }
 </script>
 </body>

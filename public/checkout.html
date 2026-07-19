@@ -65,9 +65,21 @@
   .center { text-align: center; }
   .big { font-size: 46px; margin: 6px 0; }
   a { color: var(--cyan); }
+  .lang { position: fixed; top: 16px; right: 16px; display: inline-flex; gap: 2px;
+    border: 1px solid var(--line); border-radius: 9px; padding: 3px; background: var(--bg-raise); }
+  .lang-btn { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    background: transparent; color: var(--faint); border: none; cursor: pointer; padding: 5px 9px;
+    border-radius: 6px; transition: .18s; line-height: 1; width: auto; }
+  .lang-btn:hover { color: var(--text); background: transparent; box-shadow: none; }
+  .lang-btn.active { background: var(--cyan); color: #000; font-weight: 500; }
 </style>
 </head>
 <body>
+<div class="lang">
+  <button class="lang-btn" data-lang="en">EN</button>
+  <button class="lang-btn" data-lang="ru">RU</button>
+  <button class="lang-btn" data-lang="uk">UK</button>
+</div>
 <div class="card">
   <div class="row">
     <div class="brand"><span class="dot">P</span> PayS</div>
@@ -81,37 +93,37 @@
     <div class="muted" id="merchant"></div>
     <div class="amount"><span id="amount"></span> <span id="cur" class="muted" style="font-size:20px"></span></div>
     <div class="muted" id="desc"></div>
-    <h1>Pay with</h1>
+    <h1 data-i18n="payWith">Pay with</h1>
     <div class="grid" id="coins"></div>
   </section>
 
   <!-- Step: deposit -->
   <section id="deposit" class="hide">
-    <h1>Send exactly</h1>
+    <h1 data-i18n="sendExactly">Send exactly</h1>
     <div class="amount" style="font-size:28px"><span id="cryptoAmt"></span> <span id="cryptoCur" class="muted"></span></div>
-    <div class="muted" style="margin-bottom:6px">to this <span id="netName"></span> address:</div>
+    <div class="muted" id="addrLabel" style="margin-bottom:6px"></div>
     <div class="box" id="addr"></div>
     <div class="row" style="margin:12px 0">
-      <span class="muted">Quote expires in</span>
+      <span class="muted" data-i18n="quoteExpires">Quote expires in</span>
       <span class="count" id="count" style="color:var(--warn);font-weight:700"></span>
     </div>
-    <button id="simulate" class="primary">I've sent the payment (simulate)</button>
-    <button id="change" style="width:100%;margin-top:8px">← Change currency</button>
-    <div class="muted center" style="margin-top:10px;font-size:12px">Test mode — no real crypto is moved.</div>
+    <button id="simulate" class="primary" data-i18n="simulateBtn">I've sent the payment (simulate)</button>
+    <button id="change" style="width:100%;margin-top:8px" data-i18n="changeCurrency">← Change currency</button>
+    <div class="muted center" style="margin-top:10px;font-size:12px" data-i18n="testModeNote">Test mode — no real crypto is moved.</div>
   </section>
 
   <!-- Step: progress -->
   <section id="progress" class="hide">
-    <h1>Payment status</h1>
+    <h1 data-i18n="paymentStatus">Payment status</h1>
     <ul class="steps" id="steps"></ul>
   </section>
 
   <!-- Step: done -->
   <section id="done" class="hide center">
     <div class="big">✅</div>
-    <div style="font-size:20px;font-weight:700">Payment complete</div>
-    <div class="muted" style="margin-top:6px">The merchant has been paid <span id="doneAmt"></span>.</div>
-    <button class="primary" style="margin-top:22px" onclick="location.href='/dashboard'">Back to dashboard</button>
+    <div style="font-size:20px;font-weight:700" data-i18n="paymentComplete">Payment complete</div>
+    <div class="muted" id="doneMsg" style="margin-top:6px"></div>
+    <button class="primary" style="margin-top:22px" data-i18n="backToDash" onclick="location.href='/dashboard'">Back to dashboard</button>
   </section>
 </div>
 
@@ -124,13 +136,49 @@ const show = (el, on = true) => $(el).classList.toggle('hide', !on);
 const fail = (m) => { $('#err').textContent = m; show('#err', true); };
 
 const STEP_ORDER = ['PAYMENT_DETECTED','CONFIRMING','CONVERTING','SETTLING','COMPLETED'];
-const STEP_LABEL = {
-  PAYMENT_DETECTED: 'Payment detected on-chain',
-  CONFIRMING: 'Waiting for confirmations',
-  CONVERTING: 'Converting crypto → fiat',
-  SETTLING: 'Paying out to merchant',
-  COMPLETED: 'Done',
+
+// --- i18n (EN / RU / UK) ---
+const T = {
+  en: {
+    testMode: 'TEST MODE', live: 'LIVE', payWith: 'Pay with', sendExactly: 'Send exactly',
+    toAddress: 'to this {net} address:', quoteExpires: 'Quote expires in',
+    simulateBtn: "I've sent the payment (simulate)", changeCurrency: '← Change currency',
+    testModeNote: 'Test mode — no real crypto is moved.', paymentStatus: 'Payment status',
+    paymentComplete: 'Payment complete', merchantPaid: 'The merchant has been paid {amt}.',
+    backToDash: 'Back to dashboard', locking: 'Locking price…', processing: 'Processing…',
+    step_PAYMENT_DETECTED: 'Payment detected on-chain', step_CONFIRMING: 'Waiting for confirmations',
+    step_CONVERTING: 'Converting crypto → fiat', step_SETTLING: 'Paying out to merchant', step_COMPLETED: 'Done',
+  },
+  ru: {
+    testMode: 'ТЕСТ', live: 'LIVE', payWith: 'Чем платить', sendExactly: 'Отправьте ровно',
+    toAddress: 'на этот адрес в сети {net}:', quoteExpires: 'Котировка истекает через',
+    simulateBtn: 'Я отправил оплату (симуляция)', changeCurrency: '← Сменить валюту',
+    testModeNote: 'Тестовый режим — реальная крипта не двигается.', paymentStatus: 'Статус платежа',
+    paymentComplete: 'Платёж завершён', merchantPaid: 'Мерчант получил {amt}.',
+    backToDash: 'Назад в панель', locking: 'Фиксирую курс…', processing: 'Обработка…',
+    step_PAYMENT_DETECTED: 'Оплата найдена в блокчейне', step_CONFIRMING: 'Ожидание подтверждений',
+    step_CONVERTING: 'Конвертация крипта → фиат', step_SETTLING: 'Выплата мерчанту', step_COMPLETED: 'Готово',
+  },
+  uk: {
+    testMode: 'ТЕСТ', live: 'LIVE', payWith: 'Чим платити', sendExactly: 'Надішліть рівно',
+    toAddress: 'на цю адресу в мережі {net}:', quoteExpires: 'Котирування спливає через',
+    simulateBtn: 'Я надіслав оплату (симуляція)', changeCurrency: '← Змінити валюту',
+    testModeNote: 'Тестовий режим — реальна крипта не рухається.', paymentStatus: 'Статус платежу',
+    paymentComplete: 'Платіж завершено', merchantPaid: 'Мерчант отримав {amt}.',
+    backToDash: 'Назад до панелі', locking: 'Фіксую курс…', processing: 'Обробка…',
+    step_PAYMENT_DETECTED: 'Оплату знайдено в блокчейні', step_CONFIRMING: 'Очікування підтверджень',
+    step_CONVERTING: 'Конвертація крипта → фіат', step_SETTLING: 'Виплата мерчанту', step_COMPLETED: 'Готово',
+  },
 };
+let LANG = localStorage.getItem('pays_lang') || 'en';
+const t = (k) => (T[LANG] && T[LANG][k]) || T.en[k] || k;
+function applyLang(lang) {
+  LANG = lang; localStorage.setItem('pays_lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('.lang-btn').forEach((b) => b.classList.toggle('active', b.dataset.lang === lang));
+  renderCurrent();
+}
+document.querySelectorAll('.lang-btn').forEach((b) => (b.onclick = () => applyLang(b.dataset.lang)));
 
 async function api(method, url, body) {
   const res = await fetch(url, {
@@ -147,15 +195,20 @@ const q = () => `?cs=${encodeURIComponent(cs)}`;
 let checkout;
 async function load() {
   checkout = await api('GET', `/v1/checkout/${id}${q()}`);
-  $('#mode').textContent = checkout.test_mode ? 'TEST MODE' : 'LIVE';
+  renderCurrent();
+}
+function renderCurrent() {
+  if (!checkout) return;
+  $('#mode').textContent = checkout.test_mode ? t('testMode') : t('live');
   $('#merchant').textContent = checkout.merchant_name;
   $('#amount').textContent = checkout.amount.toFixed(2);
   $('#cur').textContent = checkout.currency;
   $('#desc').textContent = checkout.description || '';
-  if (checkout.status === 'CREATED') renderCoins();
-  else if (checkout.status === 'QUOTE_LOCKED') renderDeposit();
-  else if (checkout.status === 'COMPLETED') renderDone();
-  else renderProgress(checkout.status);
+  const s = checkout.status;
+  if (s === 'CREATED') renderCoins();
+  else if (s === 'QUOTE_LOCKED') renderDeposit();
+  else if (s === 'COMPLETED') renderDone();
+  else renderProgress(s);
 }
 
 function renderCoins() {
@@ -175,7 +228,7 @@ function renderCoins() {
 async function lockQuote(currency, network, btn) {
   try {
     document.querySelectorAll('#coins button').forEach((x) => (x.disabled = true));
-    btn.textContent = 'Locking price…';
+    btn.textContent = t('locking');
     checkout = await api('POST', `/v1/checkout/${id}/quote${q()}`, {
       pay_currency: currency, pay_network: network,
     });
@@ -188,7 +241,7 @@ function renderDeposit() {
   show('#pick', false); show('#deposit', true); show('#progress', false);
   $('#cryptoAmt').textContent = Number(checkout.crypto.amount).toFixed(8);
   $('#cryptoCur').textContent = checkout.crypto.currency;
-  $('#netName').textContent = checkout.crypto.network;
+  $('#addrLabel').textContent = t('toAddress').replace('{net}', checkout.crypto.network);
   $('#addr').textContent = checkout.crypto.deposit_address;
   const exp = new Date(checkout.expires_at || Date.now() + 30000).getTime();
   clearInterval(timer);
@@ -203,7 +256,7 @@ function renderDeposit() {
 
 async function simulate() {
   try {
-    $('#simulate').disabled = true; $('#simulate').textContent = 'Processing…';
+    $('#simulate').disabled = true; $('#simulate').textContent = t('processing');
     clearInterval(timer);
     await api('POST', `/v1/checkout/${id}/simulate_payment${q()}`, {});
     poll();
@@ -218,7 +271,7 @@ function renderProgress(status) {
     const li = document.createElement('li');
     const state = i < idx ? 'done' : i === idx ? 'active' : '';
     li.className = state;
-    li.innerHTML = `<span class="ic">${i < idx ? '✓' : i + 1}</span>${STEP_LABEL[s]}`;
+    li.innerHTML = `<span class="ic">${i < idx ? '✓' : i + 1}</span>${t('step_' + s)}`;
     ul.appendChild(li);
   });
 }
@@ -226,7 +279,7 @@ function renderProgress(status) {
 function renderDone() {
   clearInterval(timer);
   show('#pick', false); show('#deposit', false); show('#progress', false); show('#done', true);
-  $('#doneAmt').textContent = `${checkout.amount.toFixed(2)} ${checkout.currency}`;
+  $('#doneMsg').textContent = t('merchantPaid').replace('{amt}', `${checkout.amount.toFixed(2)} ${checkout.currency}`);
 }
 
 async function poll() {
@@ -241,6 +294,7 @@ async function poll() {
   }
 }
 
+applyLang(LANG);
 if (!id || !cs) fail('Invalid checkout link.');
 else load().catch((e) => fail(e.message));
 </script>

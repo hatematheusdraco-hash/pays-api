@@ -19,6 +19,7 @@ export const SettlementMethod = {
   USDC: 'usdc', // Circle — stablecoin to wallet
   PAYONEER: 'payoneer',
   CARD: 'card', // payout to a bank card
+  ACH: 'ach', // Column Bank — USD bank account (ACH)
 } as const;
 export type SettlementMethod = (typeof SettlementMethod)[keyof typeof SettlementMethod];
 
